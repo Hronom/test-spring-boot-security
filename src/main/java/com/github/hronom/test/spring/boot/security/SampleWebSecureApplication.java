@@ -67,6 +67,7 @@ public class SampleWebSecureApplication extends WebMvcConfigurerAdapter {
     }
 
     public static void main(String[] args) throws Exception {
+        System.out.println(SampleWebSecureApplication.class.getSimpleName());
         new SpringApplicationBuilder(SampleWebSecureApplication.class).run(args);
     }
 }
