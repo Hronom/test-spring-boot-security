@@ -227,7 +227,7 @@
                             <!--<icon>src/main/icons/1447536731_Application.ico</icon>-->
                             <!--<icon>src/main/icons/1447536735_Application.ico</icon>-->
                             <classPath>
-                                <mainClass>com.github.hronom.test.spring.boot.security</mainClass>
+                                <mainClass>com.github.hronom.test.spring.boot.security.SampleWebSecureApplication</mainClass>
                                 <addDependencies>true</addDependencies>
                                 <preCp>anything</preCp>
                             </classPath>
