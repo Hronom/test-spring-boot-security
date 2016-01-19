@@ -7,6 +7,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,29 +26,14 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         logger.info("password:" + password);
 
         if (username.equals("admin") && password.equals("admin")) {
-            ArrayList<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new GrantedAuthority() {
-                @Override
-                public String getAuthority() {
-                    return "ROLE_ADMIN";
-                }
-            });
-            authorities.add(new GrantedAuthority() {
-                @Override
-                public String getAuthority() {
-                    return "ROLE_USER";
-                }
-            });
+            ArrayList<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
             return createUser(username, authorities);
         }
         else if (username.equals("user") && password.equals("user")) {
             ArrayList<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new GrantedAuthority() {
-                @Override
-                public String getAuthority() {
-                    return "ROLE_USER";
-                }
-            });
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
             return createUser(username, authorities);
         } else {
             throw new BadCredentialsException("Authentication fails!");
