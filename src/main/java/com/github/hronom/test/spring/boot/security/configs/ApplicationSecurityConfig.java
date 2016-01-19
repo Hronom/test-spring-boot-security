@@ -21,6 +21,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
             .authorizeRequests()
             .antMatchers("/").permitAll()
+            .antMatchers("/roles").permitAll()
             .antMatchers("/**").fullyAuthenticated()
             .and()
             // Added the sessionFixation = "none" because If I only include
