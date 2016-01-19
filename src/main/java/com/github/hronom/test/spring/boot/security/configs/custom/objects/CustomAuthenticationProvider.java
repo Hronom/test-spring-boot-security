@@ -32,6 +32,12 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
                     return "ROLE_ADMIN";
                 }
             });
+            authorities.add(new GrantedAuthority() {
+                @Override
+                public String getAuthority() {
+                    return "ROLE_USER";
+                }
+            });
             return createUser(username, authorities);
         }
         else if (username.equals("user") && password.equals("user")) {
@@ -51,7 +57,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Override
     public boolean supports(Class aClass) {
         // To indicate that this AuthenticationProvider can handle the auth request. since there's
-        // currently only one way of logging in, always return true
+        // currently only one way of logging in, always return true.
         return true;
     }
 
