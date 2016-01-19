@@ -1,5 +1,7 @@
 package com.github.hronom.test.spring.boot.security.configs;
 
+import com.github.hronom.test.spring.boot.security.configs.custom.objects.CustomAuthenticationProvider;
+
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -39,10 +41,6 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth
-            .inMemoryAuthentication()
-            .withUser("admin").password("admin").roles("ADMIN", "USER")
-            .and()
-            .withUser("user").password("user").roles("USER");
+        auth.authenticationProvider(new CustomAuthenticationProvider());
     }
 }
