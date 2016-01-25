@@ -52,6 +52,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         Collection<? extends GrantedAuthority> authorities
     ) {
         CustomUser user = new CustomUser(username, authorities);
+        logger.info("Create username: " + username);
         return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
     }
 }
