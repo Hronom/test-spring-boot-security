@@ -1,6 +1,7 @@
 package com.github.hronom.test.spring.boot.security.configs;
 
 import com.github.hronom.test.spring.boot.security.configs.custom.objects.CustomAuthenticationProvider;
+import com.github.hronom.test.spring.boot.security.handlers.CustomAuthenticationSuccessHandler;
 
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Configuration;
@@ -30,13 +31,23 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             // requiresChannel = "http" it doesn't go further from the login.
             // I try to log in but I come back to the login.
             // Original: http://stackoverflow.com/q/28341645/285571
-            .sessionManagement().sessionFixation().none()
+            .sessionManagement()
+            .sessionFixation().none()
             .and()
-            .formLogin().loginPage("/login").permitAll().failureUrl("/loginError")
-            .permitAll().and().logout().logoutUrl("/logout").permitAll().logoutSuccessUrl("/")
-            .permitAll()
+            .formLogin()
+            .loginPage("/login").permitAll()
+            .failureUrl("/loginError").permitAll()
+            .successHandler(new CustomAuthenticationSuccessHandler())
+            .usernameParameter("username")
+            .passwordParameter("password")
+            .and()
+            .logout()
+            .logoutUrl("/logout").permitAll()
+            .logoutSuccessUrl("/").permitAll()
+            .and()
             // Disable CSRF for making /logout available for all HTTP methods (POST, GET...)
-            .and().csrf().disable();
+            .csrf()
+            .disable();
     }
 
     @Override

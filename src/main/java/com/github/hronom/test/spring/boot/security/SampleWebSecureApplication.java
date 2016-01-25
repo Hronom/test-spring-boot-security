@@ -13,7 +13,9 @@ import org.springframework.context.annotation.Import;
 @EnableAutoConfiguration
 @ComponentScan
 @Import(value = {
-    ApplicationSecurityConfig.class, WebMvcConfig.class, EmbeddedServletContainerConfig.class
+    ApplicationSecurityConfig.class,
+    WebMvcConfig.class,
+    EmbeddedServletContainerConfig.class
 })
 public class SampleWebSecureApplication extends SpringBootServletInitializer {
     @Override
