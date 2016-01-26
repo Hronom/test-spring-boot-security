@@ -2,6 +2,7 @@ package com.github.hronom.test.spring.boot.security;
 
 import com.github.hronom.test.spring.boot.security.configs.ApplicationSecurityConfig;
 import com.github.hronom.test.spring.boot.security.configs.EmbeddedServletContainerConfig;
+import com.github.hronom.test.spring.boot.security.configs.FiltersConfig;
 import com.github.hronom.test.spring.boot.security.configs.WebMvcConfig;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Import;
 @Import(value = {
     ApplicationSecurityConfig.class,
     WebMvcConfig.class,
+    FiltersConfig.class,
     EmbeddedServletContainerConfig.class
 })
 public class SampleWebSecureApplication extends SpringBootServletInitializer {
