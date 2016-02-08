@@ -1,6 +1,7 @@
 package com.github.hronom.test.spring.boot.security.configs;
 
 import com.github.hronom.test.spring.boot.security.configs.custom.objects.CustomAuthenticationProvider;
+import com.github.hronom.test.spring.boot.security.configs.custom.objects.RestAuthenticationEntryPoint;
 import com.github.hronom.test.spring.boot.security.handlers.CustomAuthenticationSuccessHandler;
 
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
@@ -33,6 +34,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             // Original: http://stackoverflow.com/q/28341645/285571
             .sessionManagement()
             .sessionFixation().none()
+            .and()
+            .httpBasic().authenticationEntryPoint(new RestAuthenticationEntryPoint())
             .and()
             .formLogin()
             .loginPage("/login").permitAll()
