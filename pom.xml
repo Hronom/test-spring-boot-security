@@ -301,7 +301,7 @@
                 <configuration>
                     <workingDirectory>${project.basedir}/bin</workingDirectory>
                     <encoding>UTF-8</encoding>
-                    <argLine>-Xmx10g</argLine>
+                    <argLine>-Xmx14g</argLine>
                 </configuration>
             </plugin>
 
