@@ -22,6 +22,8 @@ import javax.servlet.http.HttpSession;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // More info about annotations:
 // http://www.jayway.com/2014/07/04/integration-testing-a-spring-boot-application/
@@ -33,13 +35,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 // http://stackoverflow.com/questions/7498202/springjunit4classrunner-does-not-close-the-application-context-at-the-end-of-jun
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class SampleControllerTestIT {
-    private MockMvc mockMvc;
-
     @Autowired
     private FilterChainProxy filterChain;
 
     @Autowired
     private EmbeddedWebApplicationContext server;
+
+    private MockMvc mockMvc;
 
     @Before
     public void setUp() {
@@ -47,12 +49,30 @@ public class SampleControllerTestIT {
     }
 
     @Test
-    public void testProcess() throws Exception {
+    public void testWelcome() throws Exception {
+        mockMvc
+            .perform(get("/"))
+            .andExpect(content().string("welcome"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testLogin() throws Exception {
         HttpSession session =
             mockMvc
                 .perform(post("/login").param("username", "admin").param("password", "admin").secure(true))
-                .andReturn().getRequest().getSession();
+                .andReturn()
+                .getRequest()
+                .getSession();
         MvcResult result = mockMvc.perform(get("/roles").session((MockHttpSession)session)).andReturn();
-        System.out.println();
+        System.out.println(result.getResponse().getContentAsString());
+    }
+
+    @Test
+    public void testNotLoggedAdmin() throws Exception {
+        mockMvc
+            .perform(get("/admin"))
+            .andExpect(content().string(""))
+            .andExpect(status().isUnauthorized());
     }
 }
