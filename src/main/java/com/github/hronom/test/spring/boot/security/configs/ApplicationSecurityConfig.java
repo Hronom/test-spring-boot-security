@@ -1,9 +1,12 @@
 package com.github.hronom.test.spring.boot.security.configs;
 
+import com.github.hronom.test.spring.boot.security.components.AuthenticatedUserManager;
 import com.github.hronom.test.spring.boot.security.configs.custom.objects.CustomAuthenticationProvider;
-import com.github.hronom.test.spring.boot.security.filters.CustomUsernamePasswordAuthenticationFilter;
 import com.github.hronom.test.spring.boot.security.configs.custom.objects.RestAuthenticationEntryPoint;
+import com.github.hronom.test.spring.boot.security.filters.CustomTokenAuthenticationFilter;
+import com.github.hronom.test.spring.boot.security.filters.CustomUsernamePasswordAuthenticationFilter;
 import com.github.hronom.test.spring.boot.security.handlers.CustomAuthenticationSuccessHandler;
+import com.github.hronom.test.spring.boot.security.handlers.CustomLogoutSuccessHandler;
 import com.github.hronom.test.spring.boot.security.handlers.CustomUrlAuthenticationFailureHandler;
 
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
@@ -14,6 +17,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -38,25 +42,43 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             // I try to log in but I come back to the login.
             // Original: http://stackoverflow.com/q/28341645/285571
             .sessionManagement()
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .sessionFixation().none()
             .and()
-            .httpBasic().authenticationEntryPoint(new RestAuthenticationEntryPoint())
+            .httpBasic().authenticationEntryPoint(restAuthenticationEntryPoint())
             .and()
             .formLogin().disable()
             .logout()
             .logoutUrl("/api/logout").permitAll()
-            .logoutSuccessUrl("/api/").permitAll()
+            .logoutSuccessHandler(new CustomLogoutSuccessHandler(authenticatedUserManager()))
             .and()
             // Disable CSRF for making /logout available for all HTTP methods (POST, GET...)
             .csrf()
             .disable();
 
-        http.addFilterBefore(customUsernamePasswordAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(
+            customUsernamePasswordAuthenticationFilter(),
+            UsernamePasswordAuthenticationFilter.class
+        );
+        http.addFilterAfter(
+            customTokenAuthenticationFilter(),
+            CustomUsernamePasswordAuthenticationFilter.class
+        );
     }
 
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(new CustomAuthenticationProvider());
+        auth.authenticationProvider(new CustomAuthenticationProvider(authenticatedUserManager()));
+    }
+
+    @Bean
+    public RestAuthenticationEntryPoint restAuthenticationEntryPoint() throws Exception {
+        return new RestAuthenticationEntryPoint();
+    }
+
+    @Bean
+    public AuthenticatedUserManager authenticatedUserManager() throws Exception {
+        return new AuthenticatedUserManager(3000);
     }
 
     @Bean
@@ -64,7 +86,17 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         CustomUsernamePasswordAuthenticationFilter filter =
             new CustomUsernamePasswordAuthenticationFilter("/api/login");
         filter.setAuthenticationManager(authenticationManager());
-        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler("/api/"));
+        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler(authenticatedUserManager()));
+        filter.setAuthenticationFailureHandler(new CustomUrlAuthenticationFailureHandler());
+        return filter;
+    }
+
+    @Bean
+    public CustomTokenAuthenticationFilter customTokenAuthenticationFilter() throws Exception {
+        CustomTokenAuthenticationFilter filter =
+            new CustomTokenAuthenticationFilter("/api/**", authenticatedUserManager());
+        filter.setAuthenticationManager(authenticationManager());
+        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler(authenticatedUserManager()));
         filter.setAuthenticationFailureHandler(new CustomUrlAuthenticationFailureHandler());
         return filter;
     }

@@ -1,5 +1,7 @@
 package com.github.hronom.test.spring.boot.security.configs.custom.objects;
 
+import com.github.hronom.test.spring.boot.security.components.AuthenticatedUserManager;
+
 import org.apache.log4j.Logger;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,6 +16,11 @@ import java.util.Collection;
 
 public class CustomAuthenticationProvider implements AuthenticationProvider {
     private Logger logger = Logger.getLogger(CustomAuthenticationProvider.class);
+    private final AuthenticatedUserManager authenticatedUserManager;
+
+    public CustomAuthenticationProvider(AuthenticatedUserManager authenticatedUserManagerArg) {
+        authenticatedUserManager = authenticatedUserManagerArg;
+    }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -29,12 +36,16 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             ArrayList<SimpleGrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-            return createUser(username, authorities);
+            UsernamePasswordAuthenticationToken token = createUser(username, authorities);
+            authenticatedUserManager.putToken(token);
+            return token;
         }
         else if (username.equals("user") && password.equals("user")) {
             ArrayList<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-            return createUser(username, authorities);
+            UsernamePasswordAuthenticationToken token = createUser(username, authorities);
+            authenticatedUserManager.putToken(token);
+            return token;
         } else {
             throw new BadCredentialsException("Authentication fails!");
         }

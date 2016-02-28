@@ -15,6 +15,7 @@ public class CustomUsernamePasswordAuthenticationFilter
 
     private final String usernameParameter = "username";
     private final String passwordParameter = "password";
+    private final String tokenParameter = "Token";
     private final boolean postOnly = false;
 
     public CustomUsernamePasswordAuthenticationFilter(String url) {
@@ -81,6 +82,10 @@ public class CustomUsernamePasswordAuthenticationFilter
      */
     protected String obtainUsername(HttpServletRequest request) {
         return request.getParameter(usernameParameter);
+    }
+
+    protected String obtainToken(HttpServletRequest request) {
+        return request.getHeader(tokenParameter);
     }
 
     /**

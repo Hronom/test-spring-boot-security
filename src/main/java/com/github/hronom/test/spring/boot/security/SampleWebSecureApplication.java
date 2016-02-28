@@ -1,5 +1,6 @@
 package com.github.hronom.test.spring.boot.security;
 
+import com.github.hronom.test.spring.boot.security.configs.AppConfig;
 import com.github.hronom.test.spring.boot.security.configs.ApplicationSecurityConfig;
 import com.github.hronom.test.spring.boot.security.configs.DispatcherConfig;
 import com.github.hronom.test.spring.boot.security.configs.EmbeddedServletContainerConfig;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Import;
 @EnableAutoConfiguration
 @ComponentScan
 @Import(value = {
+    AppConfig.class,
     DispatcherConfig.class,
     ApplicationSecurityConfig.class,
     FiltersConfig.class,

@@ -11,7 +11,10 @@ public class CustomUser implements Principal {
     private final String username;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUser(String usernameArg, Collection<? extends GrantedAuthority> authoritiesArg) {
+    public CustomUser(
+        String usernameArg,
+        Collection<? extends GrantedAuthority> authoritiesArg
+    ) {
         username = usernameArg;
         authorities = authoritiesArg;
     }
