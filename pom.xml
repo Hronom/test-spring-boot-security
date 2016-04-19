@@ -9,6 +9,7 @@
     <version>1.0.0</version>
     <modules>
         <module>test-spring-boot-security-token</module>
+        <module>test-spring-boot-security-session</module>
     </modules>
     <packaging>pom</packaging>
 
