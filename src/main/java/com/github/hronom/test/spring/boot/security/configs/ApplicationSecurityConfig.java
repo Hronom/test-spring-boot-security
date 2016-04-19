@@ -5,6 +5,7 @@ import com.github.hronom.test.spring.boot.security.configs.custom.objects.Custom
 import com.github.hronom.test.spring.boot.security.configs.custom.objects.RestAuthenticationEntryPoint;
 import com.github.hronom.test.spring.boot.security.filters.CustomTokenAuthenticationFilter;
 import com.github.hronom.test.spring.boot.security.filters.CustomUsernamePasswordAuthenticationFilter;
+import com.github.hronom.test.spring.boot.security.handlers.CustomAccessDeniedHandler;
 import com.github.hronom.test.spring.boot.security.handlers.CustomAuthenticationSuccessHandler;
 import com.github.hronom.test.spring.boot.security.handlers.CustomLogoutSuccessHandler;
 import com.github.hronom.test.spring.boot.security.handlers.CustomUrlAuthenticationFailureHandler;
@@ -46,6 +47,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             .sessionFixation().none()
             .and()
             .httpBasic().authenticationEntryPoint(restAuthenticationEntryPoint())
+            .and()
+            .exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler())
             .and()
             .formLogin().disable()
             .logout()
