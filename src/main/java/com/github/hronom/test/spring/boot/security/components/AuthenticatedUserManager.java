@@ -45,7 +45,6 @@ public class AuthenticatedUserManager {
         return principalToToken.get(authentication.getPrincipal());
     }
 
-    @Deprecated
     public void freeToken(Authentication authentication) {
         String token = principalToToken.remove(authentication.getPrincipal());
         tokenToAuthentication.remove(token);
