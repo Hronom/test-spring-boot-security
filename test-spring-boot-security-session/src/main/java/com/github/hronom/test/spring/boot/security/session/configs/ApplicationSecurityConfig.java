@@ -33,6 +33,7 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.filter.DelegatingFilterProxy;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableGlobalMethodSecurity(securedEnabled = true)
@@ -40,7 +41,7 @@ import java.util.Arrays;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http
+        /*http
             // Added the sessionFixation = "none" because If I only include requiresChannel = "http"
             // it doesn't go further from the login. I try to log in but I come back to the login.
             // Original: http://stackoverflow.com/q/28341645/285571
@@ -48,7 +49,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             .sessionAuthenticationStrategy(sessionAuthenticationStrategy())
             .maximumSessions(1)
             .maxSessionsPreventsLogin(true)
-            .sessionRegistry(sessionRegistry());
+            .sessionRegistry(sessionRegistry());*/
 
         http
             .requiresChannel()
@@ -97,14 +98,32 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-        SessionAuthenticationStrategy
-            sessionAuthenticationStrategy
-            = new CompositeSessionAuthenticationStrategy(Arrays.asList(
-            new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry()),
-            new SessionFixationProtectionStrategy(),
-            new RegisterSessionAuthenticationStrategy(sessionRegistry())
-        ));
-        return sessionAuthenticationStrategy;
+        // ConcurrentSessionControlAuthenticationStrategy
+        ConcurrentSessionControlAuthenticationStrategy
+            concurrentSessionControlAuthenticationStrategy =
+            new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry());
+        concurrentSessionControlAuthenticationStrategy.setMaximumSessions(1);
+
+        // SessionFixationProtectionStrategy
+        SessionFixationProtectionStrategy
+            sessionFixationProtectionStrategy =
+            new SessionFixationProtectionStrategy();
+
+        // RegisterSessionAuthenticationStrategy
+        RegisterSessionAuthenticationStrategy
+            registerSessionAuthenticationStrategy =
+            new RegisterSessionAuthenticationStrategy(sessionRegistry());
+
+        List<SessionAuthenticationStrategy> delegateStrategies = Arrays.asList(
+            concurrentSessionControlAuthenticationStrategy,
+            sessionFixationProtectionStrategy,
+            registerSessionAuthenticationStrategy
+        );
+
+        // CompositeSessionAuthenticationStrategy
+        CompositeSessionAuthenticationStrategy compositeSessionAuthenticationStrategy =
+            new CompositeSessionAuthenticationStrategy(delegateStrategies);
+        return compositeSessionAuthenticationStrategy;
     }
 
     @Bean
