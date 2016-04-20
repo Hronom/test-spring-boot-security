@@ -2,24 +2,25 @@ package com.github.hronom.test.spring.boot.security.session.configs;
 
 import com.github.hronom.test.spring.boot.security.session.configs.custom.objects.CustomAuthenticationProvider;
 import com.github.hronom.test.spring.boot.security.session.configs.custom.objects.RestAuthenticationEntryPoint;
+import com.github.hronom.test.spring.boot.security.session.filters.CustomConcurrentSessionFilter;
 import com.github.hronom.test.spring.boot.security.session.filters.CustomUsernamePasswordAuthenticationFilter;
 import com.github.hronom.test.spring.boot.security.session.handlers.CustomAccessDeniedHandler;
 import com.github.hronom.test.spring.boot.security.session.handlers.CustomAuthenticationSuccessHandler;
 import com.github.hronom.test.spring.boot.security.session.handlers.CustomLogoutSuccessHandler;
 import com.github.hronom.test.spring.boot.security.session.handlers.CustomUrlAuthenticationFailureHandler;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
+import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
@@ -27,7 +28,9 @@ import org.springframework.security.web.authentication.session.ConcurrentSession
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
+import org.springframework.security.web.session.ConcurrentSessionFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.web.filter.DelegatingFilterProxy;
 
 import java.util.Arrays;
 
@@ -42,8 +45,9 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             // it doesn't go further from the login. I try to log in but I come back to the login.
             // Original: http://stackoverflow.com/q/28341645/285571
             .sessionManagement()
-            .sessionAuthenticationStrategy(sessionAuthenticationStrategy(sessionRegistry()))
+            .sessionAuthenticationStrategy(sessionAuthenticationStrategy())
             .maximumSessions(1)
+            .maxSessionsPreventsLogin(true)
             .sessionRegistry(sessionRegistry());
 
         http
@@ -76,7 +80,12 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
             .csrf().disable();
 
         http.addFilterBefore(
-            customUsernamePasswordAuthenticationFilter(sessionRegistry()),
+            customConcurrentSessionFilter(),
+            ConcurrentSessionFilter.class
+        );
+
+        http.addFilterBefore(
+            customUsernamePasswordAuthenticationFilter(),
             UsernamePasswordAuthenticationFilter.class
         );
     }
@@ -87,24 +96,19 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public static SessionAuthenticationStrategy sessionAuthenticationStrategy(SessionRegistryImpl sessionRegistry) {
+    public SessionAuthenticationStrategy sessionAuthenticationStrategy() {
         SessionAuthenticationStrategy
             sessionAuthenticationStrategy
             = new CompositeSessionAuthenticationStrategy(Arrays.asList(
-            new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry),
+            new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry()),
             new SessionFixationProtectionStrategy(),
-            new RegisterSessionAuthenticationStrategy(sessionRegistry)
+            new RegisterSessionAuthenticationStrategy(sessionRegistry())
         ));
         return sessionAuthenticationStrategy;
     }
 
-    /**
-     * Until https://jira.spring.io/browse/SEC-2855
-     * is closed, we need to have this custom sessionRegistry
-     */
     @Bean
-    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-    public static SessionRegistryImpl sessionRegistry() {
+    public SessionRegistry sessionRegistry() {
         SessionRegistryImpl sessionRegistryImpl = new SessionRegistryImpl();
         return sessionRegistryImpl;
     }
@@ -120,13 +124,21 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public CustomUsernamePasswordAuthenticationFilter customUsernamePasswordAuthenticationFilter(SessionRegistryImpl sessionRegistry) throws Exception {
+    public CustomConcurrentSessionFilter customConcurrentSessionFilter() {
+        CustomConcurrentSessionFilter customConcurrentSessionFilter =
+            new CustomConcurrentSessionFilter(sessionRegistry());
+        return customConcurrentSessionFilter;
+    }
+
+    @Bean
+    public CustomUsernamePasswordAuthenticationFilter customUsernamePasswordAuthenticationFilter()
+        throws Exception {
         CustomUsernamePasswordAuthenticationFilter filter =
             new CustomUsernamePasswordAuthenticationFilter("/api/login");
         filter.setAuthenticationManager(authenticationManager());
-        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler(sessionRegistry));
+        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler(sessionRegistry()));
         filter.setAuthenticationFailureHandler(new CustomUrlAuthenticationFailureHandler());
-        filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy(sessionRegistry));
+        filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
         return filter;
     }
 }

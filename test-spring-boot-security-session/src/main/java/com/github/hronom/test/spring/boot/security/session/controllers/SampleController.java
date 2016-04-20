@@ -17,13 +17,6 @@ public class SampleController {
         return "welcome";
     }
 
-    @RequestMapping("/admin")
-    @Secured("ROLE_ADMIN")
-    public String admin(Principal principal) {
-        //User user = (User) principal;
-        return "admin" + " username \"" + principal.getName() + "\"";
-    }
-
     @RequestMapping("/user")
     @Secured("ROLE_USER")
     public String user(Principal principal) {

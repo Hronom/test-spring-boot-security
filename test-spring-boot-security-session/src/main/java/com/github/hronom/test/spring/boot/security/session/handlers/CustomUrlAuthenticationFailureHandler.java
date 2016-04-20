@@ -1,7 +1,7 @@
 package com.github.hronom.test.spring.boot.security.session.handlers;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class CustomUrlAuthenticationFailureHandler implements AuthenticationFailureHandler {
-    protected final Log logger = LogFactory.getLog(getClass());
+    private static final Logger logger = LogManager.getLogger();
 
     @Override
     public void onAuthenticationFailure(
