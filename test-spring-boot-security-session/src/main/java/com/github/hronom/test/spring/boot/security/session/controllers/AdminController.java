@@ -30,6 +30,7 @@ public class AdminController {
         // invalidate user session
         List<Object> loggedUsers = sessionRegistry.getAllPrincipals();
         for (Object principal : loggedUsers) {
+            System.out.println(principal.toString());
             /*if(principal instanceof User) {
                 final User loggedUser = (User) principal;
                 if(user.getUsername().equals(loggedUser.getUsername())) {

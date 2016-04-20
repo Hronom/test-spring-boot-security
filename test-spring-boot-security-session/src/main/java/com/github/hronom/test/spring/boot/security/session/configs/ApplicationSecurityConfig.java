@@ -8,17 +8,18 @@ import com.github.hronom.test.spring.boot.security.session.handlers.CustomAuthen
 import com.github.hronom.test.spring.boot.security.session.handlers.CustomLogoutSuccessHandler;
 import com.github.hronom.test.spring.boot.security.session.handlers.CustomUrlAuthenticationFailureHandler;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
@@ -27,7 +28,8 @@ import org.springframework.security.web.authentication.session.RegisterSessionAu
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
-import org.springframework.security.web.session.SessionManagementFilter;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableGlobalMethodSecurity(securedEnabled = true)
@@ -36,42 +38,45 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+            // Added the sessionFixation = "none" because If I only include requiresChannel = "http"
+            // it doesn't go further from the login. I try to log in but I come back to the login.
+            // Original: http://stackoverflow.com/q/28341645/285571
+            .sessionManagement()
+            .sessionAuthenticationStrategy(sessionAuthenticationStrategy(sessionRegistry()))
+            .maximumSessions(1)
+            .sessionRegistry(sessionRegistry());
+
+        http
             .requiresChannel()
-            .antMatchers("/api/**").requiresSecure()
-            .and()
+            .antMatchers("/api/**").requiresSecure();
+
+        http
             .authorizeRequests()
             .antMatchers("/api/").permitAll()
             .antMatchers("/api/login").permitAll()
             .antMatchers("/api/roles").permitAll()
-            .antMatchers("/api/**").fullyAuthenticated()
-            .and()
-            // Added the sessionFixation = "none" because If I only include
-            // requiresChannel = "http" it doesn't go further from the login.
-            // I try to log in but I come back to the login.
-            // Original: http://stackoverflow.com/q/28341645/285571
-            .sessionManagement()
-            .maximumSessions(1)
-            .expiredUrl("/login?expired")
-            .sessionRegistry(sessionRegistry())
-            .and()
-            //.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            //.sessionFixation().migrateSession()
-            .and()
-            .httpBasic().authenticationEntryPoint(restAuthenticationEntryPoint())
-            .and()
-            .exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler())
-            .and()
+            .antMatchers("/api/**").fullyAuthenticated();
+
+        http
+            .httpBasic()
+            .authenticationEntryPoint(restAuthenticationEntryPoint());
+
+        http
+            .exceptionHandling()
+            .accessDeniedHandler(new CustomAccessDeniedHandler());
+
+        http
             .formLogin().disable()
             .logout()
             .logoutUrl("/api/logout").permitAll()
-            .logoutSuccessHandler(new CustomLogoutSuccessHandler())
-            .and()
+            .logoutSuccessHandler(new CustomLogoutSuccessHandler());
+
+        http
             // Disable CSRF for making /logout available for all HTTP methods (POST, GET...)
-            .csrf()
-            .disable();
+            .csrf().disable();
 
         http.addFilterBefore(
-            customUsernamePasswordAuthenticationFilter(),
+            customUsernamePasswordAuthenticationFilter(sessionRegistry()),
             UsernamePasswordAuthenticationFilter.class
         );
     }
@@ -82,23 +87,30 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public SessionRegistry sessionRegistry() throws Exception {
-        return new SessionRegistryImpl();
+    public static SessionAuthenticationStrategy sessionAuthenticationStrategy(SessionRegistryImpl sessionRegistry) {
+        SessionAuthenticationStrategy
+            sessionAuthenticationStrategy
+            = new CompositeSessionAuthenticationStrategy(Arrays.asList(
+            new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry),
+            new SessionFixationProtectionStrategy(),
+            new RegisterSessionAuthenticationStrategy(sessionRegistry)
+        ));
+        return sessionAuthenticationStrategy;
     }
 
     /**
-     * Register HttpSessionEventPublisher. Note that it is declared
-     * static to instantiate it very early, before this configuration
-     * class is processed.
-     *
-     * See http://docs.spring.io/spring-boot/docs/current/reference/html/howto-embedded-servlet-containers.html
-     * for how to add a ServletContextListener.
-     *
-     * See http://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/context/annotation/Bean.html
-     * for how static instantiation works.
+     * Until https://jira.spring.io/browse/SEC-2855
+     * is closed, we need to have this custom sessionRegistry
      */
     @Bean
-    public static ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    public static SessionRegistryImpl sessionRegistry() {
+        SessionRegistryImpl sessionRegistryImpl = new SessionRegistryImpl();
+        return sessionRegistryImpl;
+    }
+
+    @Bean
+    public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
         return new ServletListenerRegistrationBean<>(new HttpSessionEventPublisher());
     }
 
@@ -108,12 +120,13 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public CustomUsernamePasswordAuthenticationFilter customUsernamePasswordAuthenticationFilter() throws Exception {
+    public CustomUsernamePasswordAuthenticationFilter customUsernamePasswordAuthenticationFilter(SessionRegistryImpl sessionRegistry) throws Exception {
         CustomUsernamePasswordAuthenticationFilter filter =
             new CustomUsernamePasswordAuthenticationFilter("/api/login");
         filter.setAuthenticationManager(authenticationManager());
-        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler());
+        filter.setAuthenticationSuccessHandler(new CustomAuthenticationSuccessHandler(sessionRegistry));
         filter.setAuthenticationFailureHandler(new CustomUrlAuthenticationFailureHandler());
+        filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy(sessionRegistry));
         return filter;
     }
 }
