@@ -4,12 +4,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.web.DefaultRedirectStrategy;
-import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
-import org.springframework.security.web.session.ConcurrentSessionFilter;
-import org.springframework.security.web.util.UrlUtils;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -28,37 +24,22 @@ import javax.servlet.http.HttpSession;
  */
 public class CustomConcurrentSessionFilter extends GenericFilterBean {
     // ~ Instance fields
-    // ================================================================================================
+    // =============================================================================================
 
     private SessionRegistry sessionRegistry;
-    private String expiredUrl;
     private LogoutHandler[] handlers = new LogoutHandler[] {new SecurityContextLogoutHandler()};
 
     // ~ Methods
-    // ========================================================================================================
+    // =============================================================================================
 
     public CustomConcurrentSessionFilter(SessionRegistry sessionRegistry) {
         Assert.notNull(sessionRegistry, "SessionRegistry required");
         this.sessionRegistry = sessionRegistry;
     }
 
-    public CustomConcurrentSessionFilter(SessionRegistry sessionRegistry, String expiredUrl) {
-        Assert.notNull(sessionRegistry, "SessionRegistry required");
-        Assert.isTrue(
-            expiredUrl == null || UrlUtils.isValidRedirectUrl(expiredUrl),
-            expiredUrl + " isn't a valid redirect URL"
-        );
-        this.sessionRegistry = sessionRegistry;
-        this.expiredUrl = expiredUrl;
-    }
-
     @Override
     public void afterPropertiesSet() {
         Assert.notNull(sessionRegistry, "SessionRegistry required");
-        Assert.isTrue(
-            expiredUrl == null || UrlUtils.isValidRedirectUrl(expiredUrl),
-            expiredUrl + " isn't a valid redirect URL"
-        );
     }
 
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -75,6 +56,8 @@ public class CustomConcurrentSessionFilter extends GenericFilterBean {
                 if (info.isExpired()) {
                     // Expired - abort processing
                     doLogout(request, response);
+
+                    // TODO Add custom processing here.
 
                     response.getWriter().print(
                         "This session has been expired (possibly due to multiple concurrent " +
@@ -98,10 +81,5 @@ public class CustomConcurrentSessionFilter extends GenericFilterBean {
         for (LogoutHandler handler : handlers) {
             handler.logout(request, response, auth);
         }
-    }
-
-    public void setLogoutHandlers(LogoutHandler[] handlers) {
-        Assert.notNull(handlers);
-        this.handlers = handlers;
     }
 }
